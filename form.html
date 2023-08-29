@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" 
+    integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" 
+    crossorigin="anonymous">
+</head>
+
+<body>
+    <form onsubmit="saveToLocalStorage(event)">
+        <label>CandyName</label>
+        <input type="text" id="name" required />
+        <label>Description</label>
+        <input type="text" id="desc" required />
+        <label>Price</label>
+        <input type="text" id="price" required />
+        <label>Quantity</label>
+        <input type="text" id="quan" required />
+        <button type="submit">AddItem</button>
+    </form>
+    <ul id="listOfCandy"></ul>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.min.js"></script>
+    <script>
+        function saveToLocalStorage(event) {
+            event.preventDefault();
+
+            const name = event.target.name.value;
+            const desc = event.target.desc.value;
+            const price = event.target.price.value;
+            const quan = event.target.quan.value;
+
+            const obj = {
+                name,
+                desc,
+                price,
+                quan
+            };
+
+            axios.post('http://localhost:3000/candy/add-candy', obj)
+                .then(response => {
+                    showOnScreen(response.data);
+                })
+                .catch(err => console.log(err));
+
+            event.target.reset();
+        }
+
+        function showOnScreen(user) {
+            const parentNode = document.getElementById('listOfCandy');
+            const li = document.createElement('li');
+            li.id = user.id;
+            li.innerHTML = `
+                ${user.name} - ${user.desc} - $${user.price} -
+                <span class="quantity">${user.quan}</span>
+                <button onclick="buyOne('${user.id}', ${user.quan})">Buy One</button>
+                <button onclick="buyTwo('${user.id}', ${user.quan})">Buy Two</button>
+                <button onclick="buyThree('${user.id}', ${user.quan})">Buy Three</button>
+            `;
+
+            parentNode.appendChild(li);
+        } 
+
+      async function buyOne(candyId) {
+        const candyRes = await axios.get('http://localhost:3000/candy/get-candy/'+candyId);
+            const d=await candyRes.data
+            currentQuan=d.quan
+            if (currentQuan >0) {
+                const newQuan = currentQuan - 1;
+                updateQuantity(candyId, newQuan);
+            }
+            else{
+                showErrorMessage('Item is Finished')
+            }
+        }
+
+     async function buyTwo(candyId) {
+            const candyRes = await axios.get('http://localhost:3000/candy/get-candy/'+candyId);
+            const d=await candyRes.data
+            currentQuan=d.quan
+            if (currentQuan >1) {
+                const newQuan = currentQuan - 2;
+                updateQuantity(candyId, newQuan);
+            }
+            else{
+                showErrorMessage('Item is Finished')
+            }
+
+        }
+
+       async function buyThree(candyId) {
+        const candyRes = await axios.get('http://localhost:3000/candy/get-candy/'+candyId);
+            const d=await candyRes.data
+            currentQuan=d.quan
+            if (currentQuan >2) {
+                const newQuan = currentQuan - 3;
+                updateQuantity(candyId, newQuan);
+            }
+            else{
+                showErrorMessage('Item is Finished')
+            }
+        }
+
+        function showErrorMessage(message){
+            alert(message)
+        }
+
+        async function updateQuantity(candyId, newQuan) {
+
+            const candyRes = await axios.get('http://localhost:3000/candy/get-candy/'+candyId);
+
+                const candyObj =await candyRes.data
+                console.log(candyObj);
+                const response = await axios.put(`http://localhost:3000/candy/update-candy/${candyId}`,
+                 {
+                quan: newQuan,
+                price:candyObj.price,
+                name:candyObj.name,
+                desc:candyObj.desc,
+                });
+             updateQuantityOnScreen(candyId, newQuan);
+
+}
+
+
+        function updateQuantityOnScreen(candyId, newQuan) {
+            const candyElement = document.getElementById(candyId);
+            if (candyElement) {
+                const quanElement = candyElement.querySelector('.quantity');
+                if (quanElement) {
+                    quanElement.textContent = newQuan;
+                }
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            axios.get('http://localhost:3000/candy/get-candy')
+                .then(response => {
+                    for (var i = 0; i < response.data.length; i++) {
+                        showOnScreen(response.data[i]);
+                    }
+                })
+                .catch(err => console.log(err));
+        });
+    </script>
+</body>
+</html>
